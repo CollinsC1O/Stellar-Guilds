@@ -11,6 +11,14 @@ use guild::membership::{
 use guild::storage;
 use guild::types::{Member, Role};
 
+mod bounty;
+use bounty::types::{Bounty, BountyStatus};
+use bounty::{
+    create_bounty, fund_bounty, claim_bounty, submit_work, approve_completion,
+    cancel_bounty_auth, release_escrow, get_bounty_data, get_guild_bounties_list,
+};
+
+
 /// Stellar Guilds - Main Contract Entry Point
 /// 
 /// This is the foundational contract for the Stellar Guilds platform.
@@ -190,6 +198,76 @@ impl StellarGuildsContract {
         required_role: Role,
     ) -> bool {
         has_permission(&env, guild_id, address, required_role)
+    }
+
+    // ============ Bounty Functions ============
+
+    /// Create a new bounty
+    pub fn create_bounty(
+        env: Env,
+        guild_id: u64,
+        creator: Address,
+        title: String,
+        description: String,
+        reward_amount: i128,
+        token: Address,
+        expiry: u64,
+    ) -> u64 {
+        create_bounty(
+            &env,
+            guild_id,
+            creator,
+            title,
+            description,
+            reward_amount,
+            token,
+            expiry,
+        )
+    }
+
+    /// Fund a bounty
+    pub fn fund_bounty(
+        env: Env,
+        bounty_id: u64,
+        funder: Address,
+        amount: i128,
+    ) -> bool {
+        fund_bounty(&env, bounty_id, funder, amount)
+    }
+
+    /// Claim a bounty
+    pub fn claim_bounty(env: Env, bounty_id: u64, claimer: Address) -> bool {
+        claim_bounty(&env, bounty_id, claimer)
+    }
+
+    /// Submit work for a bounty
+    pub fn submit_work(env: Env, bounty_id: u64, submission_url: String) -> bool {
+        submit_work(&env, bounty_id, submission_url)
+    }
+
+    /// Approve bounty completion
+    pub fn approve_completion(env: Env, bounty_id: u64, approver: Address) -> bool {
+        approve_completion(&env, bounty_id, approver)
+    }
+
+    /// Release escrow funds (can be called by anyone if completed)
+    pub fn release_escrow(env: Env, bounty_id: u64) -> bool {
+        release_escrow(&env, bounty_id)
+    }
+
+    /// Cancel a bounty
+    pub fn cancel_bounty(env: Env, bounty_id: u64, canceller: Address) -> bool {
+        cancel_bounty_auth(&env, bounty_id, canceller)
+    }
+
+    /// Get bounty details
+    pub fn get_bounty(env: Env, bounty_id: u64) -> Bounty {
+        get_bounty_data(&env, bounty_id)
+    }
+
+    /// Get all bounties for a guild
+    pub fn get_guild_bounties(env: Env, guild_id: u64) -> Vec<Bounty> {
+        get_guild_bounties_list(&env, guild_id)
     }
 }
 
