@@ -34,6 +34,26 @@ use treasury::{
 };
 use treasury::initialize_treasury_storage;
 
+mod governance;
+use governance::{
+    create_proposal as gov_create_proposal,
+    vote as gov_vote,
+    delegate_vote as gov_delegate_vote,
+    undelegate_vote as gov_undelegate_vote,
+    finalize_proposal as gov_finalize_proposal,
+    execute_proposal as gov_execute_proposal,
+    cancel_proposal as gov_cancel_proposal,
+    get_proposal as gov_get_proposal,
+    get_active_proposals as gov_get_active_proposals,
+    update_governance_config as gov_update_governance_config,
+    Proposal,
+    ProposalStatus,
+    ProposalType,
+    VoteDecision,
+    ExecutionPayload,
+    GovernanceConfig,
+};
+
 /// Stellar Guilds - Main Contract Entry Point
 /// 
 /// This is the foundational contract for the Stellar Guilds platform.
@@ -371,6 +391,69 @@ impl StellarGuildsContract {
         paused: bool,
     ) -> bool {
         core_emergency_pause(&env, treasury_id, signer, paused)
+    }
+
+    /// Governance: create a proposal
+    pub fn create_proposal(
+        env: Env,
+        guild_id: u64,
+        proposer: Address,
+        proposal_type: ProposalType,
+        title: String,
+        description: String,
+        execution_payload: ExecutionPayload,
+    ) -> u64 {
+        gov_create_proposal(&env, guild_id, proposer, proposal_type, title, description, execution_payload)
+    }
+
+    /// Governance: cast a vote
+    pub fn vote(env: Env, proposal_id: u64, voter: Address, decision: VoteDecision) -> bool {
+        gov_vote(&env, proposal_id, voter, decision)
+    }
+
+    /// Governance: delegate voting power to another member
+    pub fn delegate_vote(env: Env, guild_id: u64, delegator: Address, delegate: Address) -> bool {
+        gov_delegate_vote(&env, guild_id, delegator, delegate)
+    }
+
+    /// Governance: remove delegation
+    pub fn undelegate_vote(env: Env, guild_id: u64, delegator: Address) -> bool {
+        gov_undelegate_vote(&env, guild_id, delegator)
+    }
+
+    /// Governance: finalize proposal outcome after voting period
+    pub fn finalize_proposal(env: Env, proposal_id: u64) -> ProposalStatus {
+        gov_finalize_proposal(&env, proposal_id)
+    }
+
+    /// Governance: execute a passed proposal
+    pub fn execute_proposal(env: Env, proposal_id: u64) -> bool {
+        gov_execute_proposal(&env, proposal_id)
+    }
+
+    /// Governance: cancel a proposal
+    pub fn cancel_proposal(env: Env, proposal_id: u64, canceller: Address) -> bool {
+        gov_cancel_proposal(&env, proposal_id, canceller)
+    }
+
+    /// Governance: get a proposal
+    pub fn get_proposal(env: Env, proposal_id: u64) -> Proposal {
+        gov_get_proposal(&env, proposal_id)
+    }
+
+    /// Governance: get all active proposals for a guild
+    pub fn get_active_proposals(env: Env, guild_id: u64) -> Vec<Proposal> {
+        gov_get_active_proposals(&env, guild_id)
+    }
+
+    /// Governance: update governance configuration for a guild
+    pub fn update_governance_config(
+        env: Env,
+        guild_id: u64,
+        caller: Address,
+        config: GovernanceConfig,
+    ) -> bool {
+        gov_update_governance_config(&env, guild_id, caller, config)
     }
 }
 
