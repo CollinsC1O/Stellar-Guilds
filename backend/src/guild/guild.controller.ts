@@ -65,8 +65,8 @@ export class GuildController {
   @Post(':id/approve')
   async approve(@Param('id') id: string, @Body() dto: ApproveInviteDto, @Request() req: any) {
     if (dto.token) return this.guildService.approveInviteByToken(id, dto.token, req.user.userId);
-    // If no token provided, try to approve membership for requester
-    return this.guildService.approveInviteByToken(id, '', req.user.userId);
+    // If no token provided, try to approve the pending invite for the requester
+    return this.guildService.approveInviteForUser(id, req.user.userId);
   }
 
   @UseGuards(JwtAuthGuard)

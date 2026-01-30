@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, ConflictException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateGuildDto } from './dto/create-guild.dto';
 import { UpdateGuildDto } from './dto/update-guild.dto';
@@ -20,14 +20,27 @@ export class GuildService {
   async createGuild(dto: CreateGuildDto, ownerId: string) {
     const slug = dto.slug ? dto.slug : this.slugify(dto.name);
 
-    const guild = await this.prisma.guild.create({
-      data: {
-        name: dto.name,
-        slug,
-        description: dto.description,
-        ownerId,
-      },
-    });
+    // Pre-check slug uniqueness to provide friendlier error
+    const existing = await this.prisma.guild.findUnique({ where: { slug } });
+    if (existing) throw new ConflictException('Slug already in use');
+
+    let guild;
+    try {
+      guild = await this.prisma.guild.create({
+        data: {
+          name: dto.name,
+          slug,
+          description: dto.description,
+          ownerId,
+        },
+      });
+    } catch (err: any) {
+      // Handle Prisma unique constraint race or other DB errors
+      if (err.code === 'P2002') {
+        throw new ConflictException('Guild with that slug or unique field already exists');
+      }
+      throw new InternalServerErrorException('Failed to create guild');
+    }
 
     // create owner membership
     await this.prisma.guildMembership.create({
@@ -141,6 +154,16 @@ export class GuildService {
 
     await this.prisma.guild.update({ where: { id: guildId }, data: { memberCount: { increment: 1 } as any } as any });
 
+    return updated;
+  }
+
+  async approveInviteForUser(guildId: string, userId: string) {
+    const membership = await this.prisma.guildMembership.findUnique({ where: { userId_guildId: { userId, guildId } } });
+    if (!membership) throw new NotFoundException('Invite not found');
+    if (membership.status !== 'PENDING') throw new BadRequestException('No pending invite to approve');
+
+    const updated = await this.prisma.guildMembership.update({ where: { id: membership.id }, data: { status: 'APPROVED', joinedAt: new Date(), invitationToken: null } });
+    await this.prisma.guild.update({ where: { id: guildId }, data: { memberCount: { increment: 1 } as any } as any });
     return updated;
   }
 
