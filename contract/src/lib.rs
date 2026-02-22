@@ -143,6 +143,16 @@ use multisig::{
     OperationType,
 };
 
+mod upgrade;
+use upgrade::logic as upgrade_logic;
+use upgrade::storage as upgrade_storage;
+use upgrade::types::Version;
+
+mod proxy;
+use proxy::implementation as proxy_impl;
+use proxy::storage as proxy_storage;
+use proxy::types::ProxyConfig;
+
 /// Stellar Guilds - Main Contract Entry Point
 ///
 /// This is the foundational contract for the Stellar Guilds platform.
@@ -2024,6 +2034,189 @@ impl StellarGuildsContract {
     /// Number of subscriptions processed
     pub fn process_due_subscriptions(env: Env, limit: u32) -> u32 {
         sub_process_due_subscriptions(&env, limit)
+    }
+
+    // ============ Upgrade Functions ============
+
+    /// Initialize upgrade functionality
+    pub fn initialize_upgrade_system(
+        env: Env,
+        initial_version_major: u32,
+        initial_version_minor: u32,
+        initial_version_patch: u32,
+        governance_address: Address,
+    ) -> bool {
+        let version = Version::new(initial_version_major, initial_version_minor, initial_version_patch);
+        upgrade_storage::initialize(&env, version, governance_address);
+        true
+    }
+
+    /// Propose an upgrade
+    pub fn propose_upgrade(
+        env: Env,
+        proposer: Address,
+        new_contract_address: Address,
+        target_version_major: u32,
+        target_version_minor: u32,
+        target_version_patch: u32,
+        description: String,
+    ) -> u64 {
+        let target_version = Version::new(target_version_major, target_version_minor, target_version_patch);
+        upgrade_logic::propose_upgrade(&env, &proposer, &new_contract_address, &target_version, description)
+    }
+
+    /// Vote on an upgrade proposal
+    pub fn vote_on_upgrade_proposal(
+        env: Env,
+        voter: Address,
+        proposal_id: u64,
+        vote_for: bool,
+    ) -> bool {
+        match upgrade_logic::vote_on_proposal(&env, &voter, proposal_id, vote_for) {
+            Ok(_) => true,
+            Err(_) => false,
+        }
+    }
+
+    /// Execute an approved upgrade
+    pub fn execute_upgrade_proposal(
+        env: Env,
+        executor: Address,
+        proposal_id: u64,
+    ) -> bool {
+        match upgrade_logic::execute_upgrade(&env, &executor, proposal_id) {
+            Ok(_) => true,
+            Err(_) => false,
+        }
+    }
+
+    /// Perform emergency upgrade
+    pub fn emergency_upgrade(
+        env: Env,
+        caller: Address,
+        new_contract_address: Address,
+        new_version_major: u32,
+        new_version_minor: u32,
+        new_version_patch: u32,
+    ) -> bool {
+        let new_version = Version::new(new_version_major, new_version_minor, new_version_patch);
+        match upgrade_logic::emergency_upgrade(&env, &caller, &new_contract_address, &new_version) {
+            Ok(_) => true,
+            Err(_) => false,
+        }
+    }
+
+    /// Toggle emergency upgrades on/off
+    pub fn toggle_emergency_upgrades(
+        env: Env,
+        caller: Address,
+        enable: bool,
+    ) -> bool {
+        match upgrade_logic::toggle_emergency_upgrades(&env, &caller, enable) {
+            Ok(_) => true,
+            Err(_) => false,
+        }
+    }
+
+    /// Get current contract version
+    pub fn get_current_version(env: Env) -> Version {
+        upgrade_storage::get_current_version(&env)
+    }
+
+    /// Register a migration plan for an upgrade
+    pub fn register_migration_plan(
+        env: Env,
+        caller: Address,
+        proposal_id: u64,
+        from_version_major: u32,
+        from_version_minor: u32,
+        from_version_patch: u32,
+        to_version_major: u32,
+        to_version_minor: u32,
+        to_version_patch: u32,
+        migration_function_selector: soroban_sdk::Symbol,
+        estimated_gas: u64,
+    ) -> bool {
+        let from_version = Version::new(from_version_major, from_version_minor, from_version_patch);
+        let to_version = Version::new(to_version_major, to_version_minor, to_version_patch);
+        let migration_plan = upgrade::types::MigrationPlan {
+            from_version,
+            to_version,
+            migration_function_selector,
+            estimated_gas,
+        };
+        match upgrade_logic::register_migration_plan(&env, &caller, proposal_id, &migration_plan) {
+            Ok(_) => true,
+            Err(_) => false,
+        }
+    }
+
+    // ============ Proxy Functions ============
+
+    /// Initialize proxy functionality
+    pub fn initialize_proxy(
+        env: Env,
+        initial_implementation: Address,
+        admin: Address,
+    ) -> bool {
+        proxy_storage::initialize(&env, initial_implementation, admin);
+        true
+    }
+
+    /// Upgrade the proxy to a new implementation
+    pub fn proxy_upgrade(
+        env: Env,
+        caller: Address,
+        new_implementation: Address,
+    ) -> bool {
+        match proxy_impl::upgrade(&env, &caller, &new_implementation) {
+            Ok(_) => true,
+            Err(_) => false,
+        }
+    }
+
+    /// Transfer admin rights of the proxy
+    pub fn proxy_transfer_admin(
+        env: Env,
+        caller: Address,
+        new_admin: Address,
+    ) -> bool {
+        match proxy_impl::transfer_admin(&env, &caller, &new_admin) {
+            Ok(_) => true,
+            Err(_) => false,
+        }
+    }
+
+    /// Get proxy information
+    pub fn proxy_get_info(env: Env) -> ProxyConfig {
+        proxy_impl::get_proxy_info(&env)
+    }
+
+    /// Check if proxy is paused
+    pub fn proxy_is_paused(env: Env) -> bool {
+        proxy_impl::is_paused(&env)
+    }
+
+    /// Trigger emergency stop for the proxy
+    pub fn proxy_emergency_stop(
+        env: Env,
+        caller: Address,
+    ) -> bool {
+        match proxy_impl::emergency_stop(&env, &caller) {
+            Ok(_) => true,
+            Err(_) => false,
+        }
+    }
+
+    /// Resume proxy after emergency stop
+    pub fn proxy_resume(
+        env: Env,
+        caller: Address,
+    ) -> bool {
+        match proxy_impl::resume(&env, &caller) {
+            Ok(_) => true,
+            Err(_) => false,
+        }
     }
 }
 
