@@ -4,6 +4,10 @@ export { Input } from './ui/Input'
 export { Card } from './ui/Card'
 export { Modal } from './ui/Modal'
 
+// Bounty Components
+export { BountyCard } from './bounty'
+export type { BountyStatus } from './bounty'
+
 // Layout Components
 export { Header } from './layout/Header'
 export { Sidebar } from './layout/Sidebar'
