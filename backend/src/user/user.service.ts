@@ -5,6 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { StorageService } from '../storage/storage.service';
 import {
   UpdateUserProfileDto,
   ChangePasswordDto,
@@ -16,7 +17,10 @@ import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private storageService: StorageService,
+  ) {}
 
   /**
    * Get user by ID with public profile information
@@ -190,13 +194,25 @@ export class UserService {
   /**
    * Update user avatar URL
    */
-  async updateAvatar(userId: string, avatarUrl: string) {
+  async updateAvatar(
+    userId: string,
+    file: { buffer: Buffer; originalname: string },
+  ) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
 
     if (!user) {
       throw new NotFoundException('User not found');
+    }
+
+    const avatarUrl = await this.storageService.uploadFile(
+      file.buffer,
+      file.originalname,
+    );
+
+    if (user.avatarUrl) {
+      await this.storageService.deleteFile(user.avatarUrl);
     }
 
     const updated = await this.prisma.user.update({
