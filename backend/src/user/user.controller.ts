@@ -2,7 +2,6 @@ import {
   Controller,
   Get,
   Post,
-  Put,
   Patch,
   Delete,
   Body,
@@ -13,7 +12,19 @@ import {
   HttpCode,
   HttpStatus,
   BadRequestException,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiBody,
+  ApiConsumes,
+} from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
@@ -24,7 +35,9 @@ import {
   SearchUserDto,
   AssignRoleDto,
   UserRole,
+  UserProfileDto,
 } from './dto/user.dto';
+import { validateImageFile } from '../common/utils/file-upload.validator';
 
 @Controller('users')
 export class UserController {
@@ -51,8 +64,20 @@ export class UserController {
 
   /**
    * Get user profile by ID (public)
+   * Returns user profile excluding sensitive fields like password, email, walletAddress
    */
   @Get(':userId')
+  @ApiOperation({ summary: 'Get user profile by ID (public)' })
+  @ApiParam({ name: 'userId', description: 'User ID (UUID)' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User profile retrieved successfully',
+    type: UserProfileDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'User not found',
+  })
   @HttpCode(HttpStatus.OK)
   async getUserProfile(@Param('userId') userId: string) {
     return this.userService.getUserProfile(userId);
@@ -86,23 +111,43 @@ export class UserController {
 
   /**
    * Upload user avatar
-   * Note: For file upload, use multipart/form-data
-   * In a real scenario, integrate with cloud storage (AWS S3, Cloudinary)
+   * Accepts multipart/form-data with a single "file" field.
+   * File must be JPEG, PNG, or WebP format and less than 5MB.
    */
   @Post('me/avatar')
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('file'))
   @HttpCode(HttpStatus.OK)
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Image file (JPEG, PNG, or WebP, max 5MB)',
+        },
+      },
+    },
+  })
+  @ApiOperation({ summary: 'Upload user avatar' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Avatar uploaded successfully',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid file size or type',
+  })
   async uploadAvatar(
     @Request() req: any,
-    @Body('avatarUrl') avatarUrl: string,
+    @UploadedFile() file: any,
   ) {
-    if (!avatarUrl) {
-      throw new BadRequestException('avatarUrl is required');
-    }
-    const result = await this.userService.updateAvatar(
-      req.user.userId,
-      avatarUrl,
-    );
+    // Validate file before passing to service
+    validateImageFile(file);
+    
+    const result = await this.userService.updateAvatar(req.user.userId, file);
     return {
       avatarUrl: result.avatarUrl,
       message: 'Avatar updated successfully',
