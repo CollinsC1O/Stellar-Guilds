@@ -22,6 +22,8 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiParam,
+  ApiBody,
+  ApiConsumes,
 } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -35,6 +37,7 @@ import {
   UserRole,
   UserProfileDto,
 } from './dto/user.dto';
+import { validateImageFile } from '../common/utils/file-upload.validator';
 
 @Controller('users')
 export class UserController {
@@ -109,18 +112,41 @@ export class UserController {
   /**
    * Upload user avatar
    * Accepts multipart/form-data with a single "file" field.
+   * File must be JPEG, PNG, or WebP format and less than 5MB.
    */
   @Post('me/avatar')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('file'))
   @HttpCode(HttpStatus.OK)
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Image file (JPEG, PNG, or WebP, max 5MB)',
+        },
+      },
+    },
+  })
+  @ApiOperation({ summary: 'Upload user avatar' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Avatar uploaded successfully',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid file size or type',
+  })
   async uploadAvatar(
     @Request() req: any,
     @UploadedFile() file: any,
   ) {
-    if (!file?.buffer || !file?.originalname) {
-      throw new BadRequestException('file is required');
-    }
+    // Validate file before passing to service
+    validateImageFile(file);
+    
     const result = await this.userService.updateAvatar(req.user.userId, file);
     return {
       avatarUrl: result.avatarUrl,

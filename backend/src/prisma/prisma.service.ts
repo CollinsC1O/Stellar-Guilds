@@ -102,4 +102,8 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   get $disconnect() {
     return this.prisma.$disconnect.bind(this.prisma);
   }
+
+  get $executeRawUnsafe() {
+    return this.prisma.$executeRawUnsafe.bind(this.prisma);
+  }
 }

@@ -9,6 +9,7 @@ import {
 import { validateAndNormalizeSettings } from './guild.settings';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailerService } from '../mailer/mailer.service';
+import { StorageService } from '../storage/storage.service';
 import { CreateGuildDto } from './dto/create-guild.dto';
 import { UpdateGuildDto } from './dto/update-guild.dto';
 import { InviteMemberDto } from './dto/invite-member.dto';
@@ -19,6 +20,7 @@ export class GuildService {
   constructor(
     private prisma: PrismaService,
     private mailer: MailerService,
+    private storageService: StorageService,
   ) {}
 
   private slugify(name: string) {
@@ -454,5 +456,93 @@ export class GuildService {
       where: { id: targetMembership.id },
       data: { role: role as any },
     });
+  }
+
+  /**
+   * Update guild logo (avatarUrl)
+   */
+  async updateGuildLogo(
+    guildId: string,
+    file: { buffer: Buffer; originalname: string },
+    userId: string,
+  ) {
+    await this.ensureManagePermission(guildId, userId);
+
+    const guild = await this.prisma.guild.findUnique({
+      where: { id: guildId },
+    });
+
+    if (!guild) {
+      throw new NotFoundException('Guild not found');
+    }
+
+    const logoUrl = await this.storageService.uploadFile(
+      file.buffer,
+      file.originalname,
+    );
+
+    // Delete previous logo if exists
+    if (guild.avatarUrl) {
+      try {
+        await this.storageService.deleteFile(guild.avatarUrl);
+      } catch (error: any) {
+        // Log but don't fail on delete error
+      }
+    }
+
+    const updated = await this.prisma.guild.update({
+      where: { id: guildId },
+      data: { avatarUrl: logoUrl },
+      select: {
+        id: true,
+        avatarUrl: true,
+      },
+    });
+
+    return updated;
+  }
+
+  /**
+   * Update guild banner
+   */
+  async updateGuildBanner(
+    guildId: string,
+    file: { buffer: Buffer; originalname: string },
+    userId: string,
+  ) {
+    await this.ensureManagePermission(guildId, userId);
+
+    const guild = await this.prisma.guild.findUnique({
+      where: { id: guildId },
+    });
+
+    if (!guild) {
+      throw new NotFoundException('Guild not found');
+    }
+
+    const bannerUrl = await this.storageService.uploadFile(
+      file.buffer,
+      file.originalname,
+    );
+
+    // Delete previous banner if exists
+    if (guild.bannerUrl) {
+      try {
+        await this.storageService.deleteFile(guild.bannerUrl);
+      } catch (error: any) {
+        // Log but don't fail on delete error
+      }
+    }
+
+    const updated = await this.prisma.guild.update({
+      where: { id: guildId },
+      data: { bannerUrl: bannerUrl },
+      select: {
+        id: true,
+        bannerUrl: true,
+      },
+    });
+
+    return updated;
   }
 }

@@ -17,7 +17,7 @@ import { UpdateBountyDto } from './dto/update-bounty.dto';
 import { ApplyBountyDto } from './dto/apply-bounty.dto';
 import { CreateMilestoneDto } from './dto/create-milestone.dto';
 import { ReviewWorkDto } from './dto/review-work.dto';
-import { SubmitWorkDto } from './dto/submit-work.dto';
+import { SubmitBountyWorkDto } from './dto/submit-work.dto';
 
 @Controller('bounties')
 export class BountyController {
@@ -141,11 +141,12 @@ export class BountyController {
   @Post(':id/submit-work')
   async submitWork(
     @Param('id') id: string,
-    @Body() dto: SubmitWorkDto,
+    @Body() dto: SubmitBountyWorkDto,
     @Request() req: any,
   ) {
     const userId = req.user.userId;
     return this.service.submitWork(id, dto.submissionUrl, userId);
+    return this.service.submitWork(id, dto, req.user.userId);
   }
 
   /**
