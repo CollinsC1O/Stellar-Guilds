@@ -5,10 +5,10 @@ export { Card } from "./Card";
 export { Modal } from "./Modal";
 export { Dropzone } from "./Dropzone";
 export { EmptyState } from "./EmptyState";
-export { Skeleton } from "./Skeleton";
 export {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
 } from "./DropdownMenu";
+export { Pagination } from "./Pagination";
