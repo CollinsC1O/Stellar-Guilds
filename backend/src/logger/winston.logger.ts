@@ -2,7 +2,7 @@ import * as winston from 'winston';
 import { Logger as NestLogger } from '@nestjs/common';
 
 export class WinstonLogger extends NestLogger {
-  private winstonLogger: winston.Logger;
+  private winstonLogger!: winston.Logger;
 
   constructor(context?: string) {
     super(context || 'App');

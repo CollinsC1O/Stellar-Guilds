@@ -353,7 +353,7 @@ export class BountyService {
       );
     }
 
-    const updatedBounty = await this.prisma.$transaction(async (tx) => {
+    const updatedBounty = await this.prisma.$transaction(async (tx: any) => {
       const updateResult = await tx.bounty.updateMany({
         where: {
           id: bountyId,
