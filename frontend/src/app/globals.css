@@ -29,6 +29,17 @@ body {
     rgb(var(--background-start-rgb));
 }
 
+/* Smooth theme transition */
+html {
+  transition: background-color 300ms ease-in-out, color 300ms ease-in-out;
+}
+
+html * {
+  transition: background-color 300ms ease-in-out, 
+              border-color 300ms ease-in-out, 
+              color 300ms ease-in-out;
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;

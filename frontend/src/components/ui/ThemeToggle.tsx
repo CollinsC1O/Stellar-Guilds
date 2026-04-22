@@ -17,6 +17,7 @@ const icons: Record<Theme, React.ReactNode> = {
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
+  const [isRotating, setIsRotating] = useState(false)
 
   useEffect(() => setMounted(true), [])
 
@@ -26,13 +27,21 @@ export function ThemeToggle() {
   const current = (theme as Theme) ?? 'system'
   const next = THEME_CYCLE[(THEME_CYCLE.indexOf(current) + 1) % THEME_CYCLE.length]
 
+  const handleThemeChange = () => {
+    setIsRotating(true)
+    setTheme(next)
+    setTimeout(() => setIsRotating(false), 300)
+  }
+
   return (
     <button
-      onClick={() => setTheme(next)}
+      onClick={handleThemeChange}
       aria-label={`Current theme: ${current}. Switch to ${next}`}
       className="p-2 rounded-md hover:bg-stellar-lightNavy transition-colors"
     >
-      {icons[current]}
+      <div className={`transition-transform duration-300 ${isRotating ? 'rotate-180' : ''}`}>
+        {icons[current]}
+      </div>
     </button>
   )
 }
