@@ -293,3 +293,19 @@ model PrivacySettings {
   allowMessagesFromNonFollowers Boolean @default(false)
   showAchievements              Boolean @default(true)
 }
+
+model TreasuryTransaction {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  guildId     String
+  amount      Decimal
+  asset       String
+  fromAddress String
+  toAddress   String
+  txHash      String   @unique
+  timestamp   DateTime
+
+  @@index([guildId])
+  @@index([txHash])
+  @@map("treasury_transactions")
+}
