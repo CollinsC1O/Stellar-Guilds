@@ -12,7 +12,7 @@ import { MailerService } from '../mailer/mailer.service';
 import { StorageService } from '../storage/storage.service';
 import { CreateGuildDto } from './dto/create-guild.dto';
 import { UpdateGuildDto } from './dto/update-guild.dto';
-import { InviteMemberDto } from './dto/invite-member.dto';
+import { UpdateGuildMembershipDto } from './dto/update-guild-membership.dto';
 import { randomUUID } from 'crypto';
 
 @Injectable()
@@ -597,5 +597,17 @@ export class GuildService {
     });
 
     return updated;
+  }
+
+  async updateMembership(userId: string, guildId: string, dto: UpdateGuildMembershipDto) {
+    const membership = await this.prisma.guildMembership.findUnique({
+      where: { userId_guildId: { userId, guildId } },
+    });
+    if (!membership) throw new NotFoundException('Membership not found');
+
+    return this.prisma.guildMembership.update({
+      where: { id: membership.id },
+      data: dto,
+    });
   }
 }
