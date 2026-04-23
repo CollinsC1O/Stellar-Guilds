@@ -15,9 +15,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { UseInterceptors, UploadedFile } from '@nestjs/common';
 import { GuildBulkInviteService } from './guild-bulk-invite.service';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GuildRoleGuard } from './guards/guild-role.guard';
 import { GuildRoles } from './decorators/guild-roles.decorator';
@@ -28,6 +26,7 @@ import { InviteMemberDto } from './dto/invite-member.dto';
 import { ApproveInviteDto } from './dto/approve-invite.dto';
 import { SearchGuildDto } from './dto/search-guild.dto';
 import { GuildDetailsDto } from './dto/guild-details.dto';
+import { UpdateGuildMembershipDto } from './dto/update-guild-membership.dto';
 import { validateImageFile } from '../common/utils/file-upload.validator';
 import {
   ApiTags,
@@ -327,7 +326,7 @@ export class GuildController {
   async bulkInvite(
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
-    @Req() req: any,
+    @Request() req: any,
   ) {
     if (!file) {
       return { error: 'No file uploaded' };
@@ -338,5 +337,18 @@ export class GuildController {
       req.user.userId,
       file.buffer,
     );
+  }
+
+  /**
+   * Update the current user's guild membership bio
+   */
+  @UseGuards(JwtAuthGuard)
+  @Patch(':guildId/members/me')
+  async updateMyMembership(
+    @Param('guildId') guildId: string,
+    @Body() dto: UpdateGuildMembershipDto,
+    @Request() req: any,
+  ) {
+    return this.guildService.updateMembership(req.user.userId, guildId, dto);
   }
 }
