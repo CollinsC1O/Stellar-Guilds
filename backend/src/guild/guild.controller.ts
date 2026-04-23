@@ -15,6 +15,9 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { UseInterceptors, UploadedFile } from '@nestjs/common';
+import { GuildBulkInviteService } from './guild-bulk-invite.service';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GuildRoleGuard } from './guards/guild-role.guard';
 import { GuildRoles } from './decorators/guild-roles.decorator';
@@ -38,7 +41,10 @@ import {
 
 @Controller('guilds')
 export class GuildController {
-  constructor(private guildService: GuildService) {}
+  constructor(
+    private readonly guildService: GuildService,
+    private readonly bulkInviteService: GuildBulkInviteService,
+  ) {}
 
   @UseGuards(JwtAuthGuard)
   @Post()
@@ -309,5 +315,28 @@ export class GuildController {
       bannerUrl: result.bannerUrl,
       message: 'Guild banner updated successfully',
     };
+  }
+
+/**
+   * Bulk invite guild members from a CSV file of wallet addresses.
+   * CSV should contain one wallet address per row.
+   * Returns a summary of invited and skipped addresses.
+   */
+  @Post(':id/members/bulk-invite')
+  @UseInterceptors(FileInterceptor('file'))
+  async bulkInvite(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: any,
+  ) {
+    if (!file) {
+      return { error: 'No file uploaded' };
+    }
+
+    return this.bulkInviteService.processBulkInvite(
+      id,
+      req.user.userId,
+      file.buffer,
+    );
   }
 }
