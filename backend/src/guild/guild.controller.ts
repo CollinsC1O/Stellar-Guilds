@@ -15,9 +15,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { UseInterceptors, UploadedFile } from '@nestjs/common';
 import { GuildBulkInviteService } from './guild-bulk-invite.service';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GuildRoleGuard } from './guards/guild-role.guard';
 import { GuildRoles } from './decorators/guild-roles.decorator';
@@ -327,7 +325,7 @@ export class GuildController {
   async bulkInvite(
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
-    @Req() req: any,
+    @Request() req: any,
   ) {
     if (!file) {
       return { error: 'No file uploaded' };
