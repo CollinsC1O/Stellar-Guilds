@@ -6,9 +6,10 @@
 
 :root {
   --font-hero: 'Orbitron', sans-serif;
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+  /* Light mode colors */
+  --foreground-rgb: 15, 23, 42;
+  --background-start-rgb: 248, 250, 252;
+  --background-end-rgb: 241, 245, 249;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -27,6 +28,17 @@ body {
       rgb(var(--background-end-rgb))
     )
     rgb(var(--background-start-rgb));
+}
+
+/* Smooth theme transition */
+html {
+  transition: background-color 300ms ease-in-out, color 300ms ease-in-out;
+}
+
+html * {
+  transition: background-color 300ms ease-in-out, 
+              border-color 300ms ease-in-out, 
+              color 300ms ease-in-out;
 }
 
 @layer utilities {
