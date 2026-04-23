@@ -81,6 +81,7 @@ model User {
   // Profile completion tracking
   hasCompletionBonus Boolean @default(false)
   xp                 Int     @default(0)
+  totalViews         Int     @default(0)
 
   // Notification preferences
   notificationSettings Json? @default("{\"emailOnBounty\":true,\"emailOnMention\":true,\"weeklyDigest\":true}")
